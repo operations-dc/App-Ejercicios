@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+<style>.fig-near,.fig-far{fill:none;stroke:#fff;stroke-width:8;stroke-linecap:round;stroke-linejoin:round}.fig-far{stroke:#fcd9cc}.fig-head{fill:#fff}</style>
+<rect width="512" height="512" rx="112" fill="#e4572e"/>
+<g transform="translate(218.12871287128712 400) scale(1.683168316831683)"><path class="fig-far" d="M14.3 -76.5L38.2 -74.8L60.2 -74M-15.3 -41.2L13.8 -34L-1.2 -8L6.6 -3.5"/><path class="fig-near" d="M-15.3 -41.2L14.3 -76.5"/><path class="fig-near" d="M14.3 -76.5L38.3 -76.5L60.3 -77.2M-15.3 -41.2L14.1 -35L0 -8.5L7.9 -4.3"/><circle class="fig-head" cx="22.7" cy="-86.4" r="9"/></g>
+<text x="256" y="470" font-family="Arial Black,Arial,sans-serif" font-weight="900" font-size="64" fill="#fff" text-anchor="middle">28</text>
+</svg>
