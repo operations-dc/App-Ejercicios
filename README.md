@@ -1,5 +1,7 @@
 # Reto 28 días · Calistenia en casa
 
+**App:** https://operations-dc.github.io/App-Ejercicios/
+
 App web instalable (PWA) para entrenar todos los días en casa, sin material. Inspirada en la mecánica de los retos de 28 días: una cuadrícula de días que se van desbloqueando, sesiones guiadas con temporizador y seguimiento del progreso.
 
 ## Funciones
