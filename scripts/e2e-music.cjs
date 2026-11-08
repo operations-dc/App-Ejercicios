@@ -12,7 +12,7 @@ const out = process.argv[2];
     const s = OscillatorNode.prototype.start;
     OscillatorNode.prototype.start = function (...a) { window.__notes++; return s.apply(this, a); };
   });
-  await p.goto('http://localhost:4173/');
+  await p.goto('' + (process.env.URL || 'http://localhost:4173/') + '');
   await p.waitForTimeout(400);
   await p.screenshot({ path: `${out}/n1-home.png` });
   await p.getByLabel('Día 1', { exact: true }).click();
