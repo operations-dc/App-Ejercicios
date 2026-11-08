@@ -1,0 +1,32 @@
+/* Colores de las figuras animadas. .fig = fondo claro, .fig-dark = fondo oscuro. */
+.fig {
+  --skin: #e0a47e; --skin-far: #c48762;
+  --shirt: #e4572e; --shirt-far: #b8431f;
+  --shorts: #2b2f3a; --shorts-far: #4a5060;
+  --shoe: #44403c; --shoe-far: #78716c;
+  --hair: #3b2a20;
+  --mat: #d9e4dd; --shadow: rgb(28 25 23 / .12);
+  --prop: #c9a27a; --prop-line: #a8835d;
+}
+.fig-dark {
+  --skin-far: #b07a58; --shirt-far: #a63c1b; --shorts: #4b5263; --shorts-far: #343945;
+  --mat: #2f3a34; --shoe: #e7e5e4; --shoe-far: #a8a29e; --shadow: rgb(0 0 0 / .35); --prop: #8a6a4a; --prop-line: #6e5339;
+}
+.fig path { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.fig .fig-skin { stroke: var(--skin); }
+.fig .fig-skin-far { stroke: var(--skin-far); }
+.fig .fig-skin-fill { fill: var(--skin); }
+.fig .fig-skin-far-fill { fill: var(--skin-far); }
+.fig .fig-shirt { stroke: var(--shirt); }
+.fig .fig-shirt-far { stroke: var(--shirt-far); }
+.fig .fig-shorts { stroke: var(--shorts); }
+.fig .fig-shorts-far { stroke: var(--shorts-far); }
+.fig .fig-shoe { stroke: var(--shoe); }
+.fig .fig-shoe-far { stroke: var(--shoe-far); }
+.fig .fig-shirt-poly { fill: var(--shirt); stroke: var(--shirt); stroke-width: 9; }
+.fig .fig-shorts-poly { fill: var(--shorts); stroke: var(--shorts); stroke-width: 9; }
+.fig .fig-hair { fill: var(--hair); }
+.fig .fig-mat { fill: var(--mat); }
+.fig .fig-shadow { fill: var(--shadow); }
+.fig .fig-prop { fill: var(--prop); }
+.fig .fig-prop-line { stroke: var(--prop-line); stroke-width: 4; }

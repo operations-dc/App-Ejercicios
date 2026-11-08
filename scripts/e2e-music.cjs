@@ -1,0 +1,45 @@
+// Comprueba la música generada y captura las pantallas nuevas.
+const { chromium, devices } = require('playwright');
+const out = process.argv[2];
+(async () => {
+  const b = await chromium.launch({ args: ['--autoplay-policy=no-user-gesture-required'] });
+  const ctx = await b.newContext({ ...devices['iPhone 13'], deviceScaleFactor: 2 });
+  const p = await ctx.newPage();
+  const errors = [];
+  p.on('pageerror', (e) => errors.push(e.message));
+  await p.addInitScript(() => {
+    window.__notes = 0;
+    const s = OscillatorNode.prototype.start;
+    OscillatorNode.prototype.start = function (...a) { window.__notes++; return s.apply(this, a); };
+  });
+  await p.goto('http://localhost:4173/');
+  await p.waitForTimeout(400);
+  await p.screenshot({ path: `${out}/n1-home.png` });
+  await p.getByLabel('Día 1', { exact: true }).click();
+  await p.waitForTimeout(400);
+  await p.getByText('Música', { exact: true }).scrollIntoViewIfNeeded();
+  await p.screenshot({ path: `${out}/n2-sheet.png` });
+  await p.getByText('Empezar entrenamiento').click();
+  await p.waitForTimeout(2500);
+  const n1 = await p.evaluate(() => window.__notes);
+  for (let i = 0; i < 8; i++) await p.getByLabel('Siguiente').click();
+  await p.waitForTimeout(2500);
+  const n2 = await p.evaluate(() => window.__notes);
+  await p.screenshot({ path: `${out}/n3-work.png` });
+  await p.getByLabel('Música de la app').click();
+  await p.waitForTimeout(300);
+  await p.screenshot({ path: `${out}/n4-propia.png` });
+  await p.waitForTimeout(1500);
+  const n3 = await p.evaluate(() => window.__notes);
+  await p.waitForTimeout(1500);
+  const n4 = await p.evaluate(() => window.__notes);
+  console.log('notas calentamiento 2.5s:', n1, '| circuito 2.5s:', n2 - n1, '| con "mi música" 1.5s:', n4 - n3);
+  console.log('ajustes guardados:', await p.evaluate(() => JSON.parse(localStorage.getItem('reto28.v1')).ajustes));
+  await p.getByRole('button', { name: 'Uso mi música' }).click();
+  await p.getByRole('button', { name: 'Sin música' }).click();
+  await p.getByLabel('Siguiente').click();
+  await p.waitForTimeout(600);
+  await p.screenshot({ path: `${out}/n5-rest.png` });
+  console.log('errores:', errors.length ? errors : 'ninguno');
+  await b.close();
+})();

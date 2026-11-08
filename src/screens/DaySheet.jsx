@@ -2,8 +2,9 @@ import Figure from '../components/Figure.jsx';
 import { Chip, Sheet } from '../components/ui.jsx';
 import { EXERCISES } from '../data/exercises.js';
 import { workoutFor } from '../data/plan.js';
+import { MUSICA_CORTO } from '../lib/storage.js';
 
-export default function DaySheet({ dia, ciclo, hecho, onClose, onStart }) {
+export default function DaySheet({ dia, ciclo, hecho, ajustes, onAjustes, onClose, onStart }) {
   const w = workoutFor(dia, ciclo);
   return (
     <Sheet onClose={onClose}>
@@ -38,6 +39,24 @@ export default function DaySheet({ dia, ciclo, hecho, onClose, onStart }) {
           </ul>
         </div>
       ))}
+
+      <div className="mt-5">
+        <h3 className="text-sm font-semibold">Música</h3>
+        <div className="mt-1.5 grid grid-cols-3 gap-1 rounded-full bg-paper p-1 ring-1 ring-line">
+          {Object.entries(MUSICA_CORTO).map(([k, v]) => (
+            <button
+              key={k}
+              onClick={() => onAjustes({ musica: k })}
+              className={`rounded-full px-2 py-1.5 text-xs font-semibold ${ajustes.musica === k ? 'bg-ink text-white' : 'text-muted'}`}
+            >
+              {v}
+            </button>
+          ))}
+        </div>
+        {ajustes.musica === 'propia' && (
+          <p className="mt-1.5 text-xs text-muted">Pon tu playlist en Spotify o Apple Music antes de empezar: la voz y los pitidos sonarán por encima.</p>
+        )}
+      </div>
 
       <button onClick={() => onStart(w)} className="sticky bottom-0 mt-5 mb-2 w-full rounded-full bg-accent py-3.5 text-base font-bold text-white shadow-lg">
         {hecho ? 'Repetir entrenamiento' : 'Empezar entrenamiento'}

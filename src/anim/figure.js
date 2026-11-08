@@ -8,8 +8,12 @@
 // a1/l1 = extremidades cercanas (más oscuras), a2/l2 = lejanas.
 
 const D = Math.PI / 180;
-const L = { torso: 46, neck: 13, head: 9, ua: 24, fa: 22, th: 30, sh: 30, foot: 9 };
-const PAD = 3.5; // medio grosor del trazo
+const L = { torso: 46, neck: 13, head: 9.5, ua: 24, fa: 22, th: 30, sh: 30, foot: 9 };
+// Radio (medio grosor) de cada articulación, para apoyar bien en el suelo y encuadrar.
+const R = {
+  hip: 9, neck: 8, sh1: 5, sh2: 5, hp1: 7, hp2: 7, el1: 4.5, el2: 4.5, ha1: 4.5, ha2: 4.5,
+  kn1: 6, kn2: 6, an1: 4.5, an2: 4.5, to1: 4, to2: 4,
+};
 
 const vec = (a, len) => [Math.sin(a * D) * len, Math.cos(a * D) * len];
 const add = (p, q) => [p[0] + q[0], p[1] + q[1]];
@@ -77,7 +81,7 @@ function place(p, anim) {
   if (anim.anchor === 'feet') ax = (j.an1[0] + j.an2[0]) / 2;
   else ax = j[anim.anchor || 'an1'][0];
   let maxY = j.head[1] + L.head;
-  for (const k of POINT_KEYS) maxY = Math.max(maxY, j[k][1] + PAD);
+  for (const k of POINT_KEYS) maxY = Math.max(maxY, j[k][1] + R[k]);
   const dx = -ax + p.x;
   const dy = -maxY - p.lift;
   const out = {};
@@ -108,7 +112,7 @@ function prepared(anim) {
     for (let s = 0; s <= 4; s++) {
       const j = place(lerpPose(poses[i], poses[i + 1], s / 4), anim);
       for (const k of [...POINT_KEYS, 'head']) {
-        const r = k === 'head' ? L.head : PAD;
+        const r = k === 'head' ? L.head : R[k];
         minX = Math.min(minX, j[k][0] - r);
         maxX = Math.max(maxX, j[k][0] + r);
         minY = Math.min(minY, j[k][1] - r);
@@ -159,3 +163,4 @@ export function stillFrame(anim, index = 0) {
 }
 
 export const HEAD_R = L.head;
+export const SIZES = L;

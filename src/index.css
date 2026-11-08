@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./anim/fig.css";
 
 @theme {
   --color-ink: #1c1917;
@@ -23,16 +24,6 @@ body {
 }
 button { cursor: pointer; }
 
-/* Figuras animadas */
-.fig { --fig-ink: #1c1917; --fig-far: #a8a29e; --fig-ground: #e7e5e4; --fig-prop: #d6b48f; }
-.fig-dark { --fig-ink: #fafaf9; --fig-far: #78716c; --fig-ground: #44403c; --fig-prop: #8a6a4a; }
-.fig .fig-near, .fig .fig-far { fill: none; stroke-width: 7; stroke-linecap: round; stroke-linejoin: round; }
-.fig .fig-near { stroke: var(--fig-ink); }
-.fig .fig-far { stroke: var(--fig-far); }
-.fig .fig-head { fill: var(--fig-ink); }
-.fig .fig-ground { stroke: var(--fig-ground); stroke-width: 2; }
-.fig .fig-prop { fill: var(--fig-prop); }
-.fig .fig-prop-line { stroke: var(--fig-prop); stroke-width: 4; }
 
 .safe-top { padding-top: max(env(safe-area-inset-top), 12px); }
 .safe-bottom { padding-bottom: max(env(safe-area-inset-bottom), 12px); }

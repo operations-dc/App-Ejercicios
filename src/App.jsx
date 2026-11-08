@@ -7,6 +7,7 @@ import Library from './screens/Library.jsx';
 import Progress from './screens/Progress.jsx';
 import { Icon } from './components/ui.jsx';
 import { load, save, today } from './lib/storage.js';
+import { unlockAudio } from './lib/audio.js';
 
 const TABS = [
   { id: 'reto', label: 'Reto', icon: 'grid' },
@@ -37,6 +38,8 @@ export default function App() {
     }
     setDiaAbierto(dia);
   };
+
+  const cambiarAjustes = (cambios) => setState((s) => ({ ...s, ajustes: { ...s.ajustes, ...cambios } }));
 
   const guardarSesion = (sensacion) => {
     const { workout, duracionSeg } = fin;
@@ -76,8 +79,11 @@ export default function App() {
           dia={diaAbierto}
           ciclo={state.ciclo}
           hecho={!!state.completados[diaAbierto]}
+          ajustes={state.ajustes}
+          onAjustes={cambiarAjustes}
           onClose={() => setDiaAbierto(null)}
           onStart={(w) => {
+            unlockAudio(); // dentro del toque: iOS lo exige para sonar
             setDiaAbierto(null);
             setSesion(w);
           }}
@@ -86,6 +92,8 @@ export default function App() {
       {sesion && (
         <Session
           workout={sesion}
+          ajustes={state.ajustes}
+          onAjustes={cambiarAjustes}
           onExit={() => setSesion(null)}
           onFinish={(duracionSeg) => {
             setFin({ workout: sesion, duracionSeg });

@@ -8,7 +8,8 @@ App web instalable (PWA) para entrenar todos los días en casa, sin material. In
 
 - **Reto de 28 días** con desbloqueo progresivo (el día N se abre al completar el N-1).
 - **Sesión guiada**: calentamiento → circuito → vuelta a la calma, con temporizador, aviso por voz en español, pitidos 3-2-1, aviso de "cambia de lado" y pantalla siempre encendida.
-- **38 ejercicios** con animación propia (figuras SVG), técnica y versión más fácil.
+- **38 ejercicios** con animación propia (ilustraciones SVG con volumen), técnica y versión más fácil.
+- **Música**: generada en la propia app (Web Audio, sin licencias) que sube de intensidad en el circuito y se suaviza en los descansos; o modo *Uso mi música*, que se mezcla con Spotify/Apple Music sin cortarla. La música baja sola cuando habla la voz.
 - **Progreso**: racha de días seguidos, historial con sensación (fácil/bien/duro), registro y gráfico de peso.
 - **Datos locales** (localStorage) con exportación/importación a JSON.
 - Funciona sin conexión una vez instalada.
@@ -43,6 +44,7 @@ Estructura:
 - `src/data/plan.js` — plan de 28 días y progresión
 - `src/anim/` — motor de animación (cinemática por ángulos) y render SVG
 - `src/lib/storage.js` — capa de datos (aislada para migrar a un backend)
+- `src/lib/music.js` — secuenciador de música (batería, bajo, arpegio y pads)
 - `src/screens/` — pantallas
 - `scripts/gallery.mjs` — galería de poses para revisar animaciones
 
