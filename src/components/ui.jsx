@@ -32,6 +32,9 @@ export function Icon({ name, className = 'h-5 w-5' }) {
     grid: <path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z" />,
     list: <path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01" />,
     chart: <path d="M4 19h16M6 15l4-4 3 3 5-6" />,
+    music: <path d="M9 18V6l11-2v12M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM20 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0z" />,
+    'music-off': <path d="M9 18V9M9 6l11-2v8M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM3 3l18 18" />,
+    headphones: <path d="M4 15v-3a8 8 0 0 1 16 0v3M4 15h3v5H4zM17 15h3v5h-3z" />,
     edit: <path d="M4 20h4L19 9l-4-4L4 16zM13 7l4 4" />,
   };
   return (

@@ -3,15 +3,30 @@ import Figure from '../components/Figure.jsx';
 import { Icon } from '../components/ui.jsx';
 import { EXERCISES } from '../data/exercises.js';
 import { buildSteps, totalSecs } from '../lib/session.js';
-import { beep, keepAwake, say, unlockAudio, vibrate } from '../lib/audio.js';
+import { beep, keepAwake, onDuck, say, setAudioSession, unlockAudio, vibrate } from '../lib/audio.js';
+import { music } from '../lib/music.js';
+import { MUSICA } from '../lib/storage.js';
 
-export default function Session({ workout, onExit, onFinish }) {
+const ORDEN_MUSICA = ['app', 'propia', 'off'];
+
+// Intensidad de la música según el paso.
+function nivelMusica(step) {
+  if (step.kind === 'prep') return 'warm';
+  if (step.kind === 'rest') return 'rest';
+  if (step.fase === 'Circuito') return 'work';
+  if (step.fase === 'Calentamiento') return 'warm';
+  return 'calm';
+}
+
+export default function Session({ workout, ajustes, onAjustes, onExit, onFinish }) {
   const steps = useMemo(() => buildSteps(workout), [workout]);
   const total = useMemo(() => totalSecs(steps), [steps]);
   const [idx, setIdx] = useState(0);
   const [left, setLeft] = useState(steps[0].secs);
   const [paused, setPaused] = useState(false);
-  const [voz, setVoz] = useState(true);
+  const voz = ajustes.voz;
+  const musica = ajustes.musica;
+  const [aviso, setAviso] = useState(null);
   const startedAt = useRef(Date.now());
   const lastTick = useRef(null);
   const step = steps[idx];
@@ -39,8 +54,35 @@ export default function Session({ workout, onExit, onFinish }) {
       keepAwake(false);
       document.removeEventListener('visibilitychange', onVis);
       window.speechSynthesis?.cancel();
+      music.stop();
+      onDuck(null);
     };
   }, []);
+
+  // Música: la de la app, la tuya (mezclada) o ninguna.
+  useEffect(() => {
+    setAudioSession(musica === 'propia' ? 'ambient' : 'playback');
+    onDuck(musica === 'app' ? (d) => music.duck(d) : null);
+    if (musica === 'app' && !paused) music.start({ dia: workout.dia, bpm: workout.suave ? 112 : 124 });
+    else music.stop();
+  }, [musica, paused, workout]);
+
+  useEffect(() => {
+    music.setLevel(nivelMusica(step));
+  }, [step]);
+
+  useEffect(() => {
+    if (!aviso) return;
+    const t = setTimeout(() => setAviso(null), 1600);
+    return () => clearTimeout(t);
+  }, [aviso]);
+
+  const cambiarMusica = () => {
+    unlockAudio();
+    const sig = ORDEN_MUSICA[(ORDEN_MUSICA.indexOf(musica) + 1) % ORDEN_MUSICA.length];
+    onAjustes({ musica: sig });
+    setAviso(MUSICA[sig]);
+  };
 
   // Temporizador basado en reloj real (no se desfasa si el navegador ralentiza el intervalo).
   useEffect(() => {
@@ -72,6 +114,7 @@ export default function Session({ workout, onExit, onFinish }) {
       setIdx((i) => i + 1);
     } else {
       beep(990, 0.4);
+      music.stop(1.5);
       say('¡Entrenamiento completado! Buen trabajo.', voz);
       onFinish(Math.round((Date.now() - startedAt.current) / 1000));
     }
@@ -102,11 +145,17 @@ export default function Session({ workout, onExit, onFinish }) {
             <div className="h-full rounded-full bg-accent" style={{ width: `${(elapsed / total) * 100}%` }} />
           </div>
         </div>
-        <button onClick={() => setVoz((v) => !v)} className="grid h-9 w-9 place-items-center rounded-full bg-white/10" aria-label="Voz">
+        <button onClick={cambiarMusica} className={`grid h-9 w-9 place-items-center rounded-full ${musica === 'off' ? 'bg-white/10 text-white/50' : 'bg-white/10'}`} aria-label={MUSICA[musica]}>
+          <Icon name={musica === 'propia' ? 'headphones' : musica === 'off' ? 'music-off' : 'music'} />
+        </button>
+        <button onClick={() => { onAjustes({ voz: !voz }); setAviso(voz ? 'Voz desactivada' : 'Voz activada'); }} className="grid h-9 w-9 place-items-center rounded-full bg-white/10" aria-label="Voz">
           <Icon name={voz ? 'sound' : 'mute'} />
         </button>
       </div>
 
+      {aviso && (
+        <div className="pointer-events-none absolute inset-x-0 bottom-32 z-10 mx-auto w-fit rounded-full bg-white px-4 py-1.5 text-sm font-semibold text-ink shadow-lg">{aviso}</div>
+      )}
       <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-6">
         <p className={`text-xs font-bold tracking-[0.2em] uppercase ${isRest ? 'text-accent' : 'text-white/50'}`}>
           {step.kind === 'prep' ? 'Prepárate' : step.kind === 'rest' ? 'Descanso · Siguiente' : 'Ahora'}

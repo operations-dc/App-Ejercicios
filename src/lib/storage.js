@@ -16,13 +16,15 @@ const empty = () => ({
   completados: {}, // { [dia]: { fecha, duracionSeg, sensacion } } del ciclo actual
   historial: [], // [{ fecha, ciclo, dia, duracionSeg, sensacion }]
   pesos: [], // [{ fecha, kg }]
+  ajustes: { musica: 'app', voz: true }, // musica: 'app' | 'propia' | 'off'
 });
 
 export function load() {
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) return empty();
-    return { ...empty(), ...JSON.parse(raw) };
+    const data = JSON.parse(raw);
+    return { ...empty(), ...data, ajustes: { ...empty().ajustes, ...data.ajustes } };
   } catch {
     return empty();
   }
@@ -42,6 +44,14 @@ export const today = () => {
 };
 
 // Días consecutivos con al menos un entrenamiento, terminando hoy o ayer.
+export const MUSICA = {
+  app: 'Música de la app',
+  propia: 'Uso mi música',
+  off: 'Sin música',
+};
+
+export const MUSICA_CORTO = { app: 'De la app', propia: 'Mi música', off: 'Sin música' };
+
 export function racha(historial) {
   const dias = new Set(historial.map((h) => h.fecha));
   const d = new Date();
