@@ -1,18 +1,18 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Home from './screens/Home.jsx';
 import DaySheet from './screens/DaySheet.jsx';
 import Session from './screens/Session.jsx';
 import Done from './screens/Done.jsx';
 import Library from './screens/Library.jsx';
 import Progress from './screens/Progress.jsx';
-import { Icon } from './components/ui.jsx';
 import { load, save, today } from './lib/storage.js';
 import { unlockAudio } from './lib/audio.js';
 
+// Navegación numerada EX-006: 01 Base · 02 Manual (ejercicios) · 03 Parte (progreso).
 const TABS = [
-  { id: 'reto', label: 'Reto', icon: 'grid' },
-  { id: 'ejercicios', label: 'Ejercicios', icon: 'list' },
-  { id: 'progreso', label: 'Progreso', icon: 'chart' },
+  { id: 'reto', label: 'Base' },
+  { id: 'ejercicios', label: 'Manual' },
+  { id: 'progreso', label: 'Parte' },
 ];
 
 export default function App() {
@@ -33,7 +33,7 @@ export default function App() {
   const abrirDia = (dia) => {
     // Un día se desbloquea al completar el anterior.
     if (dia > 1 && !state.completados[dia - 1] && !state.completados[dia]) {
-      setToast(`Completa el día ${dia - 1} para desbloquear este`);
+      setToast(`Complete la misión ${dia - 1} para desbloquear esta`);
       return;
     }
     setDiaAbierto(dia);
@@ -53,25 +53,45 @@ export default function App() {
     setTab('reto');
   };
 
-  return (
-    <div className="mx-auto flex h-full max-w-md flex-col">
-      <main className="flex-1 overflow-y-auto">
-        {tab === 'reto' && <Home state={state} setState={setState} onOpenDay={abrirDia} />}
-        {tab === 'ejercicios' && <Library />}
-        {tab === 'progreso' && <Progress state={state} setState={setState} />}
-      </main>
+  // Con un diálogo de pantalla completa abierto, el fondo queda inerte (sin foco ni clic)
+  // y oculto a lectores de pantalla. Al cerrarse todos, el foco vuelve a la sección activa.
+  const overlay = !!(diaAbierto || sesion || fin);
+  const baseRef = useRef(null);
+  const hadOverlay = useRef(false);
+  useEffect(() => {
+    if (overlay) hadOverlay.current = true;
+    else if (hadOverlay.current) {
+      hadOverlay.current = false;
+      const a = document.activeElement;
+      if (!a || a === document.body || !baseRef.current?.contains(a)) {
+        const el = baseRef.current?.querySelector('[data-action="open-briefing"]') || baseRef.current?.querySelector('nav [aria-current="page"]');
+        el?.focus({ preventScroll: true });
+      }
+    }
+  }, [overlay]);
+  const inertProps = overlay ? { inert: '', 'aria-hidden': 'true' } : {};
 
-      <nav className="safe-bottom grid grid-cols-3 border-t border-line bg-card/95 pt-2 backdrop-blur">
-        {TABS.map((t) => (
-          <button key={t.id} onClick={() => setTab(t.id)} className={`flex flex-col items-center gap-0.5 text-[11px] font-medium ${tab === t.id ? 'text-accent' : 'text-muted'}`}>
-            <Icon name={t.icon} />
-            {t.label}
-          </button>
-        ))}
-      </nav>
+  return (
+    <div className="o28-app">
+      <div ref={baseRef} className="flex min-h-0 flex-1 flex-col" {...inertProps}>
+        <main className="o28-main">
+          {tab === 'reto' && <Home state={state} setState={setState} onOpenDay={abrirDia} />}
+          {tab === 'ejercicios' && <Library />}
+          {tab === 'progreso' && <Progress state={state} setState={setState} />}
+        </main>
+
+        <nav className="o28-nav" aria-label="Navegación principal">
+          {TABS.map((t, i) => (
+            <button key={t.id} onClick={() => setTab(t.id)} aria-current={tab === t.id ? 'page' : undefined} data-tab={t.id}>
+              <span className="code" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+              {t.label}
+            </button>
+          ))}
+        </nav>
+      </div>
 
       {toast && (
-        <div className="fixed inset-x-0 bottom-24 z-50 mx-auto w-fit rounded-full bg-ink px-4 py-2 text-sm text-white shadow-lg">{toast}</div>
+        <div role="status" className="o28-toast">{toast}</div>
       )}
 
       {diaAbierto && (

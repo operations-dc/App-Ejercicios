@@ -1,16 +1,25 @@
 import { useState } from 'react';
-import Figure from '../components/Figure.jsx';
-import { Icon } from '../components/ui.jsx';
-import { workoutFor, semanaLabel } from '../data/plan.js';
-import { OBJETIVOS, racha, today } from '../lib/storage.js';
+import { workoutFor } from '../data/plan.js';
+import { FASES, codigo } from '../data/military.js';
+import { INSTRUCTOR_IMG } from '../data/media.js';
+import { OBJETIVOS, today } from '../lib/storage.js';
 
+export const pad2 = (n) => String(n).padStart(2, '0');
+
+const Chevron = () => (
+  <span className="chev" aria-hidden="true">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M9 5l7 7-7 7" /></svg>
+  </span>
+);
+
+// Base / puesto de mando (EX-006) con el estado real del reto: ciclo, misiones, objetivo y peso.
 export default function Home({ state, setState, onOpenDay }) {
   const { completados, ciclo, perfil } = state;
   const hechos = Object.keys(completados).length;
   const siguiente = Array.from({ length: 28 }, (_, i) => i + 1).find((d) => !completados[d]);
   const hoyHecho = state.historial.some((h) => h.fecha === today());
-  const r = racha(state.historial);
   const [editPeso, setEditPeso] = useState(false);
+  const semanaActual = siguiente ? Math.ceil(siguiente / 7) : 4;
 
   const guardarPeso = (v) => {
     const kg = parseFloat(String(v).replace(',', '.'));
@@ -23,24 +32,84 @@ export default function Home({ state, setState, onOpenDay }) {
     }));
   };
 
-  const nuevoCiclo = () =>
-    setState((s) => ({ ...s, ciclo: s.ciclo + 1, completados: {} }));
+  const nuevoCiclo = () => setState((s) => ({ ...s, ciclo: s.ciclo + 1, completados: {} }));
 
   return (
-    <div className="px-4 pb-6">
-      <header className="safe-top pb-4 text-center">
-        <p className="text-[11px] font-semibold tracking-[0.2em] text-accent">RETO 28 DÍAS · NIVEL {ciclo}</p>
-        <h1 className="mt-1 text-[26px] leading-[1.05] font-black tracking-tight uppercase">
-          Calistenia en casa
-        </h1>
+    <div data-screen="base">
+      <header className="cmdbar safe-top">
+        <div>
+          <div className="code">Puesto de mando</div>
+          <div className="wordmark">OPERACIÓN<b>28</b></div>
+        </div>
+        <div className="meta">
+          <div className="kicker">Campaña 28 d</div>
+          <div className="kicker b">Nivel {ciclo}</div>
+        </div>
       </header>
 
-      <section className="rounded-2xl bg-card p-4 ring-1 ring-line">
-        <div className="grid grid-cols-2 divide-x divide-line">
-          <label className="pr-3">
-            <span className="block text-[11px] text-muted">Objetivo</span>
+      <div className="o28-body">
+        <div className="order-head">
+          <span className="kicker b">{hoyHecho && siguiente ? 'Hoy cumplida · siguiente' : 'Orden del día'}</span>
+          <span className="code">Fase {pad2(semanaActual)} · Semana {semanaActual}</span>
+        </div>
+
+        {siguiente ? (
+          <Dossier dia={siguiente} ciclo={ciclo} hechos={hechos} onOpen={() => onOpenDay(siguiente)} />
+        ) : (
+          <>
+            <article className="dossier ticks" aria-labelledby="m-title">
+              <div className="dossier-main">
+                <div className="mnum"><span className="n tnum" aria-hidden="true">28</span><div className="lbl"><span className="kicker">Campaña</span><strong>Completada</strong></div></div>
+                <h1 className="mtitle" id="m-title">Operación completada</h1>
+                <p className="msub">28 de 28. El nivel {ciclo + 1} usa ejercicios de nivel medio con más volumen.</p>
+                <div className="status"><i aria-hidden="true"></i>Cumplida <span>· 28/28</span></div>
+              </div>
+              <Portrait caption="Campaña cerrada" />
+            </article>
+            <button className="btn btn-primary brief-cta" onClick={nuevoCiclo}>
+              <span>Empezar nivel {ciclo + 1}</span>
+              <Chevron />
+            </button>
+          </>
+        )}
+
+        <div className="sect-head">
+          <h2>Campaña · 4 fases</h2>
+          <span className="tnum">{hechos} / 28 misiones</span>
+        </div>
+
+        {[1, 2, 3, 4].map((sem) => (
+          <section key={sem} className={`phase ${sem === semanaActual ? 'cur' : ''}`} aria-label={`Fase ${sem}: ${FASES[sem - 1]}`}>
+            <h3 className="pname"><span className="pcode">F{sem}</span>{FASES[sem - 1]} <em>Sem. {sem} · {workoutFor(sem * 7, ciclo).nivel}</em></h3>
+            <div className="track">
+              {Array.from({ length: 7 }, (_, i) => (sem - 1) * 7 + i + 1).map((dia) => {
+                const estado = completados[dia] ? 'done' : dia === siguiente ? 'next' : 'locked';
+                const txt = estado === 'done' ? 'cumplida, repetir' : estado === 'next' ? 'siguiente' : 'bloqueada';
+                return (
+                  <button
+                    key={dia}
+                    className={`seg ${estado}`}
+                    aria-label={`Misión ${dia} · ${txt}`}
+                    aria-disabled={estado === 'locked' ? 'true' : undefined}
+                    data-dia={dia}
+                    onClick={() => onOpenDay(dia)}
+                  >
+                    <span className="d tnum">{pad2(dia)}</span>
+                    <span className="bar" />
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        ))}
+
+        <div className="sect-head"><h2>Ficha</h2><span className="code">Este dispositivo</span></div>
+        <div className="file">
+          <div>
+            <label className="kicker" htmlFor="objetivo">Objetivo</label>
             <select
-              className="-ml-1 w-full bg-transparent text-sm font-semibold outline-none"
+              id="objetivo"
+              className="v"
               value={perfil.objetivo}
               onChange={(e) => setState((s) => ({ ...s, perfil: { ...s.perfil, objetivo: e.target.value } }))}
             >
@@ -48,118 +117,76 @@ export default function Home({ state, setState, onOpenDay }) {
                 <option key={k} value={k}>{v}</option>
               ))}
             </select>
-          </label>
-          <div className="pl-3">
-            <span className="block text-[11px] text-muted">Peso actual</span>
+          </div>
+          <div>
+            <label className="kicker" htmlFor="peso-home">Peso</label>
             {editPeso ? (
               <input
+                id="peso-home"
                 autoFocus
                 inputMode="decimal"
+                aria-label="Peso actual en kg"
                 defaultValue={perfil.pesoKg ?? ''}
-                className="w-20 border-b border-accent text-sm font-semibold outline-none"
+                className="v"
                 onBlur={(e) => guardarPeso(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') e.currentTarget.blur();
+                  if (e.key === 'Escape') setEditPeso(false);
+                }}
               />
             ) : (
-              <button className="flex items-center gap-1 text-sm font-semibold" onClick={() => setEditPeso(true)}>
-                {perfil.pesoKg ? `${perfil.pesoKg} kg` : 'Añadir'}
-                <Icon name="edit" className="h-3.5 w-3.5 text-muted" />
+              <button id="peso-home" className="v" onClick={() => setEditPeso(true)} aria-label={perfil.pesoKg ? `Peso actual ${perfil.pesoKg} kg, editar` : 'Añadir peso'}>
+                {perfil.pesoKg ? `${perfil.pesoKg} kg` : 'Sin registrar'} <small>{perfil.pesoKg ? 'Editar' : 'Añadir'}</small>
               </button>
             )}
           </div>
         </div>
-        <div className="mt-4 flex items-end justify-between">
-          <div>
-            <span className="block text-[11px] text-muted">Tu progreso</span>
-            <span className="text-sm font-semibold">{hechos} de 28 entrenamientos</span>
-          </div>
-          <span className="flex items-center gap-1 text-sm font-semibold" title="Racha de días seguidos">
-            <Icon name="flame" className={`h-4 w-4 ${r > 0 ? 'text-accent' : 'text-muted'}`} />
-            {r} {r === 1 ? 'día' : 'días'}
-          </span>
-        </div>
-        <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-line">
-          <div className="h-full rounded-full bg-ink transition-all" style={{ width: `${(hechos / 28) * 100}%` }} />
-        </div>
-      </section>
-
-      {siguiente ? (
-        <TodayCard dia={siguiente} ciclo={ciclo} hoyHecho={hoyHecho} onOpen={() => onOpenDay(siguiente)} />
-      ) : (
-        <section className="mt-4 rounded-2xl bg-ink p-5 text-center text-white">
-          <p className="text-lg font-bold">¡Reto completado! 🎉</p>
-          <p className="mt-1 text-sm text-white/70">28 de 28. El nivel {ciclo + 1} usa ejercicios de nivel medio con más volumen.</p>
-          <button className="mt-4 rounded-full bg-accent px-5 py-2.5 text-sm font-bold" onClick={nuevoCiclo}>
-            Empezar nivel {ciclo + 1}
-          </button>
-        </section>
-      )}
-
-      {[1, 2, 3, 4].map((sem) => (
-        <section key={sem} className="mt-5">
-          <h2 className="mb-2 text-xs font-semibold tracking-wide text-muted uppercase">{semanaLabel(sem, ciclo)}</h2>
-          <div className="grid grid-cols-7 gap-1.5">
-            {Array.from({ length: 7 }, (_, i) => (sem - 1) * 7 + i + 1).map((dia) => (
-              <DayTile
-                key={dia}
-                dia={dia}
-                ciclo={ciclo}
-                estado={completados[dia] ? 'hecho' : dia === siguiente ? 'siguiente' : dia < siguiente ? 'hecho' : 'bloqueado'}
-                onClick={() => onOpenDay(dia)}
-              />
-            ))}
-          </div>
-        </section>
-      ))}
+      </div>
     </div>
   );
 }
 
-function TodayCard({ dia, ciclo, hoyHecho, onOpen }) {
-  const w = workoutFor(dia, ciclo);
+function Portrait({ caption }) {
   return (
-    <button onClick={onOpen} className="mt-4 flex w-full items-center gap-3 rounded-2xl bg-ink p-3 text-left text-white">
-      <div className="h-20 w-24 shrink-0 rounded-xl bg-white/5">
-        <Figure exId={w.principal} dark className="h-full w-full" />
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="text-[11px] font-semibold tracking-wider text-accent uppercase">
-          {hoyHecho ? 'Hoy ya entrenaste · siguiente' : 'Hoy toca'} · Día {dia}
-        </p>
-        <p className="truncate text-base font-bold">{w.titulo}</p>
-        <p className="text-xs text-white/60">{w.minutos} min · Sin material{w.suave ? ' · Suave' : ''}</p>
-      </div>
-      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-accent">
-        <Icon name="play" className="h-4 w-4" />
-      </span>
-    </button>
+    <figure className="portrait">
+      <img src={INSTRUCTOR_IMG} width="1080" height="1446" alt="Instructor de Operación 28: camiseta oliva, barba y brazos tatuados" />
+      <figcaption>
+        <div className="kicker">Instructor</div>
+        <div>{caption}</div>
+      </figcaption>
+    </figure>
   );
 }
 
-function DayTile({ dia, ciclo, estado, onClick }) {
+function Dossier({ dia, ciclo, hechos, onOpen }) {
   const w = workoutFor(dia, ciclo);
-  const bloqueado = estado === 'bloqueado';
   return (
-    <button onClick={onClick} className="flex flex-col items-center gap-1" aria-label={`Día ${dia}`}>
-      <div
-        className={`relative aspect-square w-full overflow-hidden rounded-lg ring-1 ${
-          estado === 'siguiente' ? 'pulse bg-accent-soft ring-accent' : bloqueado ? 'bg-line/60 ring-line' : 'bg-card ring-line'
-        }`}
-      >
-        {bloqueado ? (
-          <span className="absolute inset-0 grid place-items-center text-muted">
-            <Icon name="lock" className="h-4 w-4" />
-          </span>
-        ) : (
-          <Figure exId={w.principal} playing={false} className="h-full w-full p-0.5" />
-        )}
-        {estado === 'hecho' && (
-          <span className="absolute right-0.5 bottom-0.5 grid h-4 w-4 place-items-center rounded-full bg-ok text-white">
-            <Icon name="check" className="h-3 w-3" />
-          </span>
-        )}
-      </div>
-      <span className={`text-[10px] font-medium ${bloqueado ? 'text-muted' : ''}`}>Día {dia}</span>
-    </button>
+    <>
+      <article className="dossier ticks" aria-labelledby="m-title">
+        <div className="dossier-main">
+          <div className="mnum">
+            <span className="n tnum" aria-hidden="true">{pad2(dia)}</span>
+            <div className="lbl">
+              <span className="kicker">Misión</span>
+              <strong>Fase {pad2(w.semana)}<br />{FASES[w.semana - 1].split(' ')[0]}</strong>
+            </div>
+          </div>
+          <h1 className="mtitle" id="m-title"><span className="sr-only">Misión {dia}: </span>{codigo(w)}</h1>
+          <p className="msub">{w.titulo}</p>
+          <div className="specs tnum">
+            <div>{w.minutos} min</div>
+            <div>Sin material</div>
+            {w.suave && <div>Suave</div>}
+          </div>
+          <div className="status"><i aria-hidden="true"></i>Listo <span>· {hechos}/28</span></div>
+        </div>
+        <Portrait caption={`Asignado a M${pad2(dia)}`} />
+      </article>
+
+      <button className="btn btn-primary brief-cta" onClick={onOpen} data-action="open-briefing">
+        <span>Abrir briefing · M{pad2(dia)}</span>
+        <Chevron />
+      </button>
+    </>
   );
 }

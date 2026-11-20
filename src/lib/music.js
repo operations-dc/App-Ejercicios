@@ -21,6 +21,7 @@ class Music {
     this.playing = false;
     this.step = 0;
     this.timer = null;
+    this.pending = new Map(); // timeouts de desconexión tras el fundido
   }
 
   start({ dia = 1, bpm = 124 } = {}) {
@@ -57,13 +58,35 @@ class Music {
     if (!this.playing) return;
     this.playing = false;
     clearInterval(this.timer);
+    this.timer = null;
     const { ctx, master, comp } = this;
     master.gain.cancelScheduledValues(ctx.currentTime);
     master.gain.setTargetAtTime(0, ctx.currentTime, fade / 3);
-    setTimeout(() => {
-      master.disconnect();
-      comp.disconnect();
-    }, fade * 1000 + 300);
+    // Desconexión diferida tras el fundido; queda registrada para poder auditarla/forzarla.
+    const disconnect = () => {
+      this.pending.delete(id);
+      try {
+        master.disconnect();
+        comp.disconnect();
+      } catch {
+        /* ya desconectado */
+      }
+    };
+    const id = setTimeout(disconnect, fade * 1000 + 300);
+    this.pending.set(id, disconnect);
+  }
+
+  // Ejecuta ya las desconexiones pendientes (p. ej. al cerrar la página).
+  flush() {
+    for (const [id, fn] of [...this.pending]) {
+      clearTimeout(id);
+      fn();
+    }
+  }
+
+  // Para QA: estado de liberación verificable.
+  stats() {
+    return { playing: this.playing, interval: this.timer !== null, pendingTimeouts: this.pending.size };
   }
 
   setLevel(level) {
@@ -79,6 +102,14 @@ class Music {
   }
 
   schedule() {
+    // Tras una suspensión (pestaña en segundo plano, contexto pausado) no se recuperan
+    // los pasos atrasados: se salta al presente conservando el compás.
+    const now = this.ctx.currentTime;
+    if (this.next < now - 0.05) {
+      const skipped = Math.ceil((now - this.next) / this.stepDur);
+      this.step = (this.step + skipped) % 64;
+      this.next += skipped * this.stepDur;
+    }
     while (this.next < this.ctx.currentTime + 0.12) {
       this.playStep(this.step, this.next);
       this.step = (this.step + 1) % 64;
@@ -95,6 +126,16 @@ class Music {
 
     if (groove && s % 4 === 0) this.kick(t, full ? 0.9 : 0.7);
     if (full && (s === 4 || s === 12)) this.clap(t);
+    // Percusión revisada en EX-005: caja de marcha en calentamiento (2 y 4, arrastre
+    // antes del 4 y mini redoble en el último compás de cada 4); en circuito, caja seca.
+    if (L === 'warm') {
+      if (s === 4 || s === 12) this.snare(t, 0.2, false);
+      else if (s === 10 || s === 11) this.snare(t, 0.06, false);
+      else if (step >= 48 && (s === 13 || s === 14 || s === 15)) this.snare(t, 0.05 + (s - 13) * 0.02, false);
+    } else if (full) {
+      if (s === 4 || s === 12) this.snare(t, 0.16, true);
+      else if (s === 7 || s === 15) this.snare(t, 0.045, true);
+    }
     if (full) this.hat(t, s % 4 === 2 ? 0.16 : 0.06, s % 4 === 2 ? 0.12 : 0.035);
     else if (groove) s % 2 === 0 && this.hat(t, s % 4 === 2 ? 0.12 : 0.05, 0.04);
     else if (s % 4 === 2) this.hat(t, 0.035, 0.04);
@@ -115,13 +156,38 @@ class Music {
   kick(t, vol) {
     const o = this.ctx.createOscillator();
     const g = this.out(0);
-    o.frequency.setValueAtTime(140, t);
-    o.frequency.exponentialRampToValueAtTime(45, t + 0.12);
+    // Bombo seco: caída de tono rápida y cola corta.
+    o.frequency.setValueAtTime(150, t);
+    o.frequency.exponentialRampToValueAtTime(52, t + 0.07);
     g.gain.setValueAtTime(vol, t);
-    g.gain.exponentialRampToValueAtTime(0.001, t + 0.38);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
     o.connect(g);
     o.start(t);
-    o.stop(t + 0.4);
+    o.stop(t + 0.24);
+  }
+
+  // Caja (EX-005): cuerpo tonal breve + bordonero (ruido filtrado). dry = más corta y aguda.
+  snare(t, vol, dry = false) {
+    const o = this.ctx.createOscillator();
+    o.type = 'triangle';
+    o.frequency.setValueAtTime(dry ? 240 : 190, t);
+    o.frequency.exponentialRampToValueAtTime(dry ? 160 : 130, t + 0.06);
+    const g = this.out(0);
+    g.gain.setValueAtTime(vol * 0.6, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + (dry ? 0.05 : 0.09));
+    o.connect(g);
+    o.start(t);
+    o.stop(t + 0.12);
+    this.noiseHit(t, vol, dry ? 0.07 : 0.15, dry ? 'highpass' : 'bandpass', dry ? 3200 : 2200);
+  }
+
+  // Redoble de semicorcheas con crescendo (un compás) antes de entrar en trabajo.
+  // Se llama desde el intervalo del temporizador (nunca desde un actualizador de estado).
+  roll() {
+    if (!this.playing) return;
+    this.rolls = (this.rolls || 0) + 1;
+    const t0 = Math.max(this.ctx.currentTime + 0.02, this.next);
+    for (let i = 0; i < 16; i++) this.snare(t0 + i * this.stepDur, 0.05 + (0.2 * i) / 15, false);
   }
 
   noiseHit(t, vol, dur, type, f) {
