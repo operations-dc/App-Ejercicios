@@ -265,7 +265,7 @@ export default function Session({ workout, ajustes, onAjustes, onExit, onFinish 
       </div>
 
       <div className="figbay">
-        <div className="hd"><span className="code">Demostración · {ex.nombre}</span><span className="code">{paused ? 'Detenida' : 'En curso'}</span></div>
+        <div className="hd"><span className="code">Demostración · {ex.nombre}</span><span className="code">{paused ? 'Sesión en pausa' : 'Sesión activa'}</span></div>
         <div className="fig-wrap">
           <ExerciseDemo exId={step.exId} dark playing={!paused} className="h-full w-full" />
         </div>
