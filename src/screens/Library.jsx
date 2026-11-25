@@ -1,26 +1,52 @@
 import { useState } from 'react';
 import Figure from '../components/Figure.jsx';
-import ExerciseDemo from '../components/ExerciseDemo.jsx';
+import ExerciseDemo, { ExercisePoster } from '../components/ExerciseDemo.jsx';
 import { Chip, Sheet } from '../components/ui.jsx';
 import { EXERCISES, PATRONES } from '../data/exercises.js';
 import { hasVideo } from '../data/media.js';
 
-// Manual de campo: los 38 ejercicios reales. Vídeo solo donde existe; el resto, guía animada.
+// Manual de campo: los 38 ejercicios reales. Vídeo solo donde existe (piloto de 4); el resto, guía animada.
 export default function Library() {
   const [sel, setSel] = useState(null);
-  const grupos = Object.keys(PATRONES).map((p) => [p, Object.entries(EXERCISES).filter(([, e]) => e.patron === p)]);
+  const [filtro, setFiltro] = useState('todos');
+  const total = Object.keys(EXERCISES).length;
+  const conVideo = Object.keys(EXERCISES).filter(hasVideo).length;
+  const grupos = Object.keys(PATRONES)
+    .map((p) => [p, Object.entries(EXERCISES).filter(([id, e]) => e.patron === p && (filtro === 'todos' || hasVideo(id)))])
+    .filter(([, list]) => list.length > 0);
+  const opciones = [
+    ['todos', `Todos (${total})`],
+    ['videos', `Vídeos (${conVideo})`],
+  ];
   return (
     <div className="safe-top px-4 pb-6">
       <span className="tape">Manual de campo</span>
       <h1 className="stencil mt-2 text-[32px] leading-none">Ejercicios</h1>
-      <p className="mt-1 text-base text-sand-300">{Object.keys(EXERCISES).length} ejercicios sin material. Toca uno para ver la técnica.</p>
+      <p className="mt-1 text-base text-sand-300">{total} ejercicios sin material. Toca uno para ver la técnica.</p>
+      <p className="mt-2 rounded-sm border-l-[3px] border-brass bg-olive-900 p-2 text-[15px] font-semibold text-sand-200" data-pilot-label>
+        Piloto limitado: {conVideo} ejercicios con vídeo; {total - conVideo} con guía animada. Plancha pendiente.
+      </p>
+      <div role="group" aria-label="Filtrar ejercicios" className="mt-3 flex gap-2">
+        {opciones.map(([k, txt]) => (
+          <button
+            key={k}
+            type="button"
+            aria-pressed={filtro === k}
+            onClick={() => setFiltro(k)}
+            data-filter={k}
+            className={`min-h-11 rounded-sm px-4 text-base font-bold tracking-wider uppercase ring-1 ring-olive-500 ${filtro === k ? 'bg-brass text-olive-900' : 'bg-olive-800 text-sand-100'}`}
+          >
+            {txt}
+          </button>
+        ))}
+      </div>
       {grupos.map(([p, list]) => (
         <section key={p} className="mt-5">
           <h2 className="mb-2 border-b border-olive-500/60 pb-1 text-[15px] font-bold tracking-wider text-sand-200 uppercase">{PATRONES[p]}</h2>
           <div className="grid grid-cols-2 gap-2">
             {list.map(([id, e]) => (
               <button key={id} onClick={() => setSel(id)} className="relative rounded-md bg-olive-800 p-2 text-left ring-1 ring-olive-500" data-ex={id}>
-                <Figure exId={id} playing={false} dark className="h-20 w-full" />
+                {hasVideo(id) ? <ExercisePoster exId={id} className="h-20 w-full" /> : <Figure exId={id} playing={false} dark className="h-20 w-full" />}
                 {hasVideo(id) && <span className="tape absolute top-1.5 right-1.5 !text-[11px]">Vídeo</span>}
                 <p className="mt-1 text-base leading-tight font-bold text-sand-100">{e.nombre}</p>
                 <p className="text-[13px] font-semibold text-sand-300 capitalize">{e.nivel}</p>

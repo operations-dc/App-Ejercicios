@@ -22,7 +22,7 @@ registerRoute(
     const url = new URL(request.url);
     url.search = '';
     const cached = await matchPrecache(url.href);
-    if (!cached) return fetch(request); // sin copia: red (si falla, la UI muestra la guía animada)
+    if (!cached) return fetch(request); // sin copia: red (si falla, la UI muestra el póster estático o texto)
     if (request.headers.has('range')) return createPartialResponse(request, cached);
     return cached;
   },

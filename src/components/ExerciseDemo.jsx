@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Figure from './Figure.jsx';
 import { EXERCISES } from '../data/exercises.js';
-import { DEMO_VIDEOS } from '../data/media.js';
+import { DEMO_VIDEOS, hasVideo, posterFor } from '../data/media.js';
 
 const RM_QUERY = '(prefers-reduced-motion: reduce)';
 
@@ -24,14 +24,41 @@ function useReducedMotion() {
 // - Se pausa con `playing=false`, al desmontar y al cambiar de ejercicio (key por id).
 // - Con prefers-reduced-motion no arranca solo; si el navegador rechaza play(), ofrece
 //   un botón accesible que reproduce desde el gesto del usuario.
-// - Si el vídeo falla, muestra la guía animada con un aviso legible.
+// - Si el vídeo falla, muestra el póster estático de ESE ejercicio con aviso legible; si el
+//   póster también falla, solo texto con el nombre. Nunca la guía SVG ni otro ejercicio.
 export default function ExerciseDemo(props) {
-  const src = DEMO_VIDEOS[props.exId];
+  const src = hasVideo(props.exId) ? DEMO_VIDEOS[props.exId] : null;
   if (!src) return <Figure exId={props.exId} playing={props.playing} dark={props.dark} className={props.className} />;
-  return <VideoDemo key={props.exId} src={src} {...props} />;
+  return <VideoDemo key={props.exId} src={src} poster={posterFor(props.exId)} {...props} />;
 }
 
-function VideoDemo({ exId, src, playing = true, dark = false, className = '' }) {
+// Póster estático de un ejercicio con vídeo. Si la imagen falla: texto explícito, sin SVG.
+export function ExercisePoster({ exId, className = '', note = null }) {
+  const poster = posterFor(exId);
+  const [broken, setBroken] = useState(false);
+  const nombre = EXERCISES[exId]?.nombre ?? exId;
+  if (!poster || broken) {
+    return (
+      <div className={`flex flex-col items-center justify-center bg-black/60 p-2 text-center ${className}`} data-poster="missing" data-ex={exId} role="img" aria-label={`${nombre}: imagen no disponible`}>
+        <span className="text-sm font-bold text-sand-100">{nombre}</span>
+        <span className="text-[13px] font-semibold text-sand-300">{note ?? 'Imagen no disponible'}</span>
+      </div>
+    );
+  }
+  return (
+    <img
+      src={poster}
+      alt={`${nombre}: fotograma del vídeo`}
+      className={`object-contain ${className}`}
+      data-poster="ok"
+      data-ex={exId}
+      decoding="async"
+      onError={() => setBroken(true)}
+    />
+  );
+}
+
+function VideoDemo({ exId, src, poster, playing = true, dark = false, className = '' }) {
   const ref = useRef(null);
   const token = useRef(0); // invalida promesas de play() obsoletas
   const [failed, setFailed] = useState(false);
@@ -117,9 +144,9 @@ function VideoDemo({ exId, src, playing = true, dark = false, className = '' }) 
   if (failed) {
     return (
       <div className={`relative ${className}`} data-demo="fallback" data-ex={exId}>
-        <Figure exId={exId} playing={playing} dark={dark} className="h-full w-full" />
+        <ExercisePoster exId={exId} className="h-full w-full" note="Vídeo e imagen no disponibles" />
         <p role="status" className="absolute inset-x-0 bottom-0 bg-black/75 px-2 py-1 text-center text-sm font-semibold text-sand-100">
-          Vídeo no disponible · guía animada
+          Vídeo no disponible · imagen estática del ejercicio
         </p>
       </div>
     );
@@ -134,6 +161,7 @@ function VideoDemo({ exId, src, playing = true, dark = false, className = '' }) 
         playsInline
         loop
         preload={reduce ? 'metadata' : 'auto'}
+        poster={poster || undefined}
         disablePictureInPicture
         className="h-full w-full object-contain"
         aria-label={`Demostración en vídeo: ${nombre}`}
